@@ -1,0 +1,29 @@
+{
+    "name": "null/realisticfaker",
+    "description": "Creates realistic data based on FAKER-library",
+    "type": "library",
+    "keywords": ["faker", "test-data", "fixtures", "data"],
+    "license": "MIT",
+    "version": "dev-master",
+    "authors": [
+        {
+            "name": "Bernhard Strehl"
+        }
+    ],
+    "require": {
+        "php": "^7.1 || ^8.0",
+        "fakerphp/faker": "~1"
+    },
+    "conflict": {
+        "fzaninotto/faker": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "*"
+    },
+     "autoload": {
+        "psr-4": {
+            "RealisticFaker\\": "src/RealisticFaker"
+        }
+    }
+    
+}
