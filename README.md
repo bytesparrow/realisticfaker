@@ -3,7 +3,7 @@
 
 ### Installation
 
-Faker requires PHP >= 7.1.
+(Realistic)Faker requires PHP >= 7.1.
 
 ```shell
 composer require null/realisticfaker
@@ -20,7 +20,8 @@ $faker = RealisticFaker\Factory::create();
 echo $faker->gender .' | ' .  $faker->firstName . ' ' .$faker->lastName .' | ' .  $faker->email;
 ```
 
-###Difference to [faker](https://fakerphp.github.io).
+### Difference to [faker](https://fakerphp.github.io).
+
 Faker is cool. Like you can
 ```php
 $faker = Faker\Factory::create();
@@ -46,7 +47,7 @@ it will give you
 That's how faker works (it uses `__get()` magic), but not what we expected. Here RealisticFaker jumps in: 
 Based on fakerphp/faker this library gives you the possibility to create (more) realistic fakeprofiles in which e.g. the email-adress matches the person's name
 
-###Usage
+### Usage
 
 ```php
 $faker = RealisticFaker\Factory::create();
@@ -83,7 +84,7 @@ $faker->addProvider(...);
 
 and so on ...
 
-###Internationalization
+### Internationalization
 
 You can use all the original translations of faker.
 Only the constructor is different:
