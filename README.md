@@ -29,9 +29,11 @@ echo $faker->firstName . ' | ' .  $faker->jobTitle;
 ```
 
 which will give you 
+```
  Jayda | Receptionist and Information Clerk
  Daphney | Woodworker
  Hope | Refractory Materials Repairer
+ ```
 and so on
 
 But what isn't cool is if you write
@@ -41,8 +43,10 @@ echo $faker->firstName . ' ' .$faker->lastName .' | ' .  $faker->email;
 ```
 
 it will give you
+```
  Randy DuBuque | mcorkery@gmail.com
  Emelia Thompson | halvorson.lura@mertz.info
+```
 
 That's how faker works (it uses `__get()` magic), but not what we expected. Here RealisticFaker jumps in: 
 Based on fakerphp/faker this library gives you the possibility to create (more) realistic fakeprofiles in which e.g. the email-adress matches the person's name
@@ -55,10 +59,14 @@ echo $faker->gender .' | ' .  $faker->firstName . ' ' .$faker->lastName .' | ' .
 ```
 
 1st call:
+```
  male | Dock Stiedemann | dock.stiedemann@damore.com
+```
 
 2nd call: 
+```
  female | Citlalli Cole | citlalli45@swift.net
+```
 ... and so on
 
 
@@ -71,7 +79,9 @@ $faker = RealisticFaker\Factory::create($identifier);
 echo $faker->gender .' | ' .  $faker->firstName . ' ' .$faker->lastName .' | ' .  $faker->email;
 ```
 this will always give you:
+```
  male | Geovanni Mohr | geovanni.mohr@yahoo.com
+```
 
 
 of course you can use all the features of the original Faker
