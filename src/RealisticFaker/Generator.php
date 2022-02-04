@@ -189,6 +189,7 @@ use Faker;
 class Generator extends \Faker\Generator {
 
     protected $faker;
+    protected $identifier;
 
     /**
      * Liefert neues Objekt
@@ -210,15 +211,11 @@ class Generator extends \Faker\Generator {
 
         $faker = Faker\Factory::create($langcode);
  
-        if ($identifier) {
-            $faker->seed(crc32($identifier));
-        } else {
-            //entferne ggf vorhandenen seed
-            $faker->seed(null);
-        }
-         
+        $this->faker = &$faker;
+        
+        //seeding happens in FACTORY
+        $this->identifier = $identifier;
       
-        $this->faker = $faker;
      
         if($langcode == 'en_US')
         {
@@ -288,6 +285,13 @@ class Generator extends \Faker\Generator {
     public function addProvider($provider) 
     {
         $this->faker->addProvider($provider);
+        //don't know if this works...
+          if ($this->identifier) {
+            $this->faker->seed(crc32($this->identifier));
+        } else {
+            //entferne ggf vorhandenen seed
+            $this->faker->seed(null);
+        }
     }
     
      
