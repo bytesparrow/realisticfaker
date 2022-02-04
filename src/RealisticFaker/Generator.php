@@ -1,8 +1,8 @@
 <?php
+
 namespace RealisticFaker;
 
 use Faker;
-
 
 /**
  * @property string $gender 
@@ -188,258 +188,230 @@ use Faker;
  */
 class Generator extends \Faker\Generator {
 
-    protected $faker;
-    protected $identifier;
+  protected $faker;
+  protected $identifier;
 
-    /**
-     * Liefert neues Objekt
-     * @param String $identifier: Wird ein $identifier gesetzt, sind die erhaltenen Werte beim nächsten Testdurchlauf unverändert. Sonst bei jedem Durchlauf Zufallswerte
-     * @param String $langcode Sprache. Default: en_US
-     * @return \RandomContent 
-     */
-    public static function get($identifier = null, $langcode = Faker\Factory::DEFAULT_LOCALE) {
+  /**
+   * Do not use. Use RealisticFaker\Factory::create(); to create a faker-object.
+   * 
+   * @param String $identifier: Wird ein $identifier gesetzt, sind die erhaltenen Werte beim nächsten Testdurchlauf unverändert. Sonst bei jedem Durchlauf Zufallswerte
+   * @param String $langcode Sprache. Default: en_US
+   */
+  public function __construct($identifier = null, $langcode = Faker\Factory::DEFAULT_LOCALE) {
 
-        return new DataCreator($identifier,$langcode);
+    $faker = Faker\Factory::create($langcode);
+
+    $this->faker = &$faker;
+
+    //seeding happens in FACTORY
+    $this->identifier = $identifier;
+
+
+    if ($langcode == 'en_US') {
+      $internetproviderClassName = "\Faker\Provider\Internet";
+    }
+    else {
+      $internetproviderClassName = "\Faker\Provider\\" . $langcode . "\Internet";
     }
 
+    $originalinternetProvider = new $internetproviderClassName($this->faker);
+    //convert internet-provider to ReflectionClass (allows stealing of private properties)
+    $oReflectionClass = new \ReflectionClass($originalinternetProvider);
+    # var_dump($oReflectionClass);
+    $this->addProvider($oReflectionClass);
+
+
+    //Hier wird noch initialisiert
     /**
-     * Konstruktur
-     * @param String $identifier: Wird ein $identifier gesetzt, sind die erhaltenen Werte beim nächsten Testdurchlauf unverändert. Sonst bei jedem Durchlauf Zufallswerte
-     * @param String $langcode Sprache. Default: en_US
+     * Das Problem: Faker liefert bei Ausführung IMMER einen random-Wert.
+     * Also: 
+     * firstName = Erwin
+     * email = Katharina.Hust@... 
+     * Das passt nicht.
+     * Deswegen wird innerhalb dieses Objekts ein Profil vorgeneriert, welches man via RealisticFaker\Factory::create('somedude')->firstName auslesen kann und sogar
+     * durch Übergabe des $identifiers via RealisticFaker\Factory::create('somedude').. wieder neu erzeugen kann 
+     * Wird z.B. über $obj->creditCardExpirationDate ein Wert abgefragt, der nicht vorinitialisiert wird,
+     * wird Faker direkt bemüht.
+     * 
      */
-    public function __construct($identifier = null,$langcode = Faker\Factory::DEFAULT_LOCALE) {
+    //[male, female, non-binary]
+    $genders = array(Faker\Provider\Person::GENDER_MALE, Faker\Provider\Person::GENDER_FEMALE, 'non-binary');
+    //folgende Klassenvariablen werden gesetzt und somit nicht bei jeder Anfrage erneut erzeugt. 
+    //Wird nun über $obj->creditCardExpirationDate  ein Wert abgefragt, der nicht vorinitialisiert wird,
+    // wird Faker direkt bemüht.
+    $this->gender = $genders[$this->faker->numberBetween(0, count($genders) - 1)];
 
-        $faker = Faker\Factory::create($langcode);
- 
-        $this->faker = &$faker;
-        
-        //seeding happens in FACTORY
-        $this->identifier = $identifier;
-      
-     
-        if($langcode == 'en_US')
-        {
-           $internetproviderClassName = "\Faker\Provider\Internet";
-        }
-        else
-        {
-           $internetproviderClassName = "\Faker\Provider\\".$langcode."\Internet";
-        }
-        
-        $originalinternetProvider = new $internetproviderClassName($this->faker);
-        //convert internet-provider to ReflectionClass (allows stealing of private properties)
-        $oReflectionClass = new \ReflectionClass($originalinternetProvider); 
-       # var_dump($oReflectionClass);
-        $this->addProvider($oReflectionClass);
-
-        
-        //Hier wird noch initialisiert
-       /**
-        * Das Problem: Faker liefert bei Ausführung IMMER einen random-Wert.
-        * Also: 
-        * firstName = Erwin
-        * email = Katharina.Hust@... 
-        * Das passt nicht.
-        * Deswegen wird innerhalb dieses Objekts ein Profil vorgeneriert, welches man via DataCreator::get('somedude')->firstName auslesen kann und sogar
-        * durch Übergabe des $identifiers via DataCreator::get('somedude').. wieder neu erzeugen kann 
-        * Wird z.B. über $obj->creditCardExpirationDate ein Wert abgefragt, der nicht vorinitialisiert wird,
-        * wird Faker direkt bemüht.
-        * 
-        */
-        //[male, female, non-binary]
-        $genders = array(Faker\Provider\Person::GENDER_MALE, Faker\Provider\Person::GENDER_FEMALE, 'non-binary');
-        //folgende Klassenvariablen werden gesetzt und somit nicht bei jeder Anfrage erneut erzeugt. 
-        //Wird nun über $obj->creditCardExpirationDate  ein Wert abgefragt, der nicht vorinitialisiert wird,
-        // wird Faker direkt bemüht.
-        $this->gender = $genders[$this->faker->numberBetween(0, count($genders)-1)];
-
-        $this->firstName = $this->faker->firstName($this->gender);
-        //optional: 2. vorname. Ist unabhängig vom 1.aufruf
-        $this->middleName = $this->faker->numberBetween(0, 1) ? '' : $this->faker->firstName($this->gender);
-        $this->lastName = $this->faker->lastName();
+    $this->firstName = $this->faker->firstName($this->gender);
+    //optional: 2. vorname. Ist unabhängig vom 1.aufruf
+    $this->middleName = $this->faker->numberBetween(0, 1) ? '' : $this->faker->firstName($this->gender);
+    $this->lastName = $this->faker->lastName();
 
 
-        //needs to be calculated....
-        //gnah... 
-        $this->name = self::simplifyString(sprintf("%s %s %s", $this->firstName, $this->middleName, $this->lastName));
-        //Auch kalkuliert, aber über custom functions: userName , >email
-         
-        //   $pr->address = $this->faker->address();
-        $this->streetName = $this->faker->streetName();
-        $this->streetAddress = $this->faker->streetAddress();
-        $this->postCode = $this->faker->postCode();
-        $this->timezone = $this->faker->timezone();
-        $this->password = $this->faker->password();
-        $this->imageUrl = $this->faker->imageUrl(200, 200);
-        
-        
+    //needs to be calculated....
+    //gnah... 
+    $this->name = self::simplifyString(sprintf("%s %s %s", $this->firstName, $this->middleName, $this->lastName));
+    //Auch kalkuliert, aber über custom functions: userName , >email
+    //   $pr->address = $this->faker->address();
+    $this->streetName = $this->faker->streetName();
+    $this->streetAddress = $this->faker->streetAddress();
+    $this->postCode = $this->faker->postCode();
+    $this->timezone = $this->faker->timezone();
+    $this->password = $this->faker->password();
+    $this->imageUrl = $this->faker->imageUrl(200, 200);
+  }
+
+  /**
+   * wrapper to Faker. Normal usage: 
+   * $faker->addProvider(new \My\Provider($faker));
+   * @param StdClass $provider
+   * @throws \InvalidArgumentException
+   */
+  public function addProvider($provider) {
+    $this->faker->addProvider($provider);
+    //don't know if this works...
+    if ($this->identifier) {
+      $this->faker->seed(crc32($this->identifier));
     }
-
-    
-    /**
-     * wrapper to Faker. Normal usage: 
-     * $datacreator->addProvider(new \My\Provider($datacreator->getProvider()));
-     * @param StdClass $provider
-     * @throws \InvalidArgumentException
-     */
-    public function addProvider($provider) 
-    {
-        $this->faker->addProvider($provider);
-        //don't know if this works...
-          if ($this->identifier) {
-            $this->faker->seed(crc32($this->identifier));
-        } else {
-            //entferne ggf vorhandenen seed
-            $this->faker->seed(null);
-        }
+    else {
+      //entferne ggf vorhandenen seed
+      $this->faker->seed(null);
     }
-    
-     
-    
+  }
 
-    
-    
-    /**
-     * faker->parse() nimmt statt der gesetzten Werte einen neuen Wert (zB für firstName), so dass die Ausgabe nicht realistisch ist.
-     * Deswegen werden vorab per billiger replace-Funktion die Personen-Variablen ersetzt und andere parse-Funktionen an 
-     * $faker weitergegeeben.
-     * @param string $format zu parsender String
-     * @param boolean $to_lower make string lowercase
-     * @return string $result veränderter String
-     */
-    public function parse($format, $to_lower = false) {
-        //$result stores what's returned
-        $result = $format;
+  /**
+   * faker->parse() nimmt statt der gesetzten Werte einen neuen Wert (zB für firstName), so dass die Ausgabe nicht realistisch ist.
+   * Deswegen werden vorab per billiger replace-Funktion die Personen-Variablen ersetzt und andere parse-Funktionen an 
+   * $faker weitergegeeben.
+   * @param string $format zu parsender String
+   * @param boolean $to_lower make string lowercase
+   * @return string $result veränderter String
+   */
+  public function parse($format, $to_lower = false) {
+    //$result stores what's returned
+    $result = $format;
 
-        if(strpos($result, '{{userName}}') !== FALSE)
-        {
-            $result = str_replace('{{userName}}', $this->userName, $format);
-        }
-        $result = str_replace('{{firstName}}', $this->firstName, $result);
-        $result = str_replace('{{lastName}}', $this->lastName, $result);
-        
-        //gebe sonstige Variablen an Faker weiter
-        $result = $this->faker->parse($result);
-        $result = Faker\Provider\Base::bothify($result);
-        
-        //string noch aufräumen
-        $result = self::simplifyString($result, $to_lower);
-
-        return $result;
+    if (strpos($result, '{{userName}}') !== FALSE) {
+      $result = str_replace('{{userName}}', $this->userName, $format);
     }
-    
-    /**
-     * überarbeitet Strings. 
-     * @param string $string Input-String
-     * @param boolean $to_lower make string lowercase
-     * @return string string veränderter String
-     */
-    private static function simplifyString($string, $to_lower = false) {
-        $result = preg_replace('/\s+/', ' ', $string);
-        if ($to_lower) {
-            $result = strtolower($result);
-        }
-        // clean possible trailing dots from first/last names
-        $result = str_replace('..', '.', $result);
-        $result = rtrim($result, '.');
-        return $result;
-    }
+    $result = str_replace('{{firstName}}', $this->firstName, $result);
+    $result = str_replace('{{lastName}}', $this->lastName, $result);
 
-    /**
-     * steals a private propery from class Faker\Provider\Internet and its derivates and returns randomly one of its values
-     * @param type $static_variable_name
-     * @return type
-     */
-    private function getRandomStaticVariableFromInternetProvider($static_variable_name) {
+    //gebe sonstige Variablen an Faker weiter
+    $result = $this->faker->parse($result);
+    $result = Faker\Provider\Base::bothify($result);
+
+    //string noch aufräumen
+    $result = self::simplifyString($result, $to_lower);
+
+    return $result;
+  }
+
+  /**
+   * überarbeitet Strings. 
+   * @param string $string Input-String
+   * @param boolean $to_lower make string lowercase
+   * @return string string veränderter String
+   */
+  private static function simplifyString($string, $to_lower = false) {
+    $result = preg_replace('/\s+/', ' ', $string);
+    if ($to_lower) {
+      $result = strtolower($result);
+    }
+    // clean possible trailing dots from first/last names
+    $result = str_replace('..', '.', $result);
+    $result = rtrim($result, '.');
+    return $result;
+  }
+
+  /**
+   * steals a private propery from class Faker\Provider\Internet and its derivates and returns randomly one of its values
+   * @param type $static_variable_name
+   * @return type
+   */
+  private function getRandomStaticVariableFromInternetProvider($static_variable_name) {
     $thiefprovider = $this->getInternetProvider();
     return $this->faker->randomElement($thiefprovider->getStaticProperties()[$static_variable_name]);
   }
 
   /**
-     * call a protected function in class Faker\Provider\Internet and its derivates 
-     * @param type $static_function_name the function to call
-     * @param array $arguments the function's arguments
-     * @return mixed $result Function's result
-     */
-    private function callProtectedFunctionFromInternetProvider($static_function_name, array $arguments = null)
-    {
-      
-      #return \Faker\Provider\Internet::transliterate($arguments);
-      #  $thiefprovider = $this->getInternetProvider();
-        #var_dump($thiefprovider->getMethods()); exit;
-     #   $result = $thiefprovider->transliterate($arguments);
-        #$result = $thiefprovider->callProtected('transliterate', $arguments);
+   * call a protected function in class Faker\Provider\Internet and its derivates 
+   * @param type $static_function_name the function to call
+   * @param array $arguments the function's arguments
+   * @return mixed $result Function's result
+   */
+  private function callProtectedFunctionFromInternetProvider($static_function_name, array $arguments = null) {
 
-        $thiefdummy = new InternetProtectedMethodThief($this->faker);
-        $result = $thiefdummy->callProtected('transliterate', $arguments);
-        return $result;
+    #return \Faker\Provider\Internet::transliterate($arguments);
+    #  $thiefprovider = $this->getInternetProvider();
+    #var_dump($thiefprovider->getMethods()); exit;
+    #   $result = $thiefprovider->transliterate($arguments);
+    #$result = $thiefprovider->callProtected('transliterate', $arguments);
+
+    $thiefdummy = new InternetProtectedMethodThief($this->faker);
+    $result = $thiefdummy->callProtected('transliterate', $arguments);
+    return $result;
+  }
+
+  /**
+   * get InternetThiefProvider in Faker's providerlist. Only used internally
+   * @return StdClass $provider
+   */
+  private function getInternetProvider() {
+    foreach ($this->faker->getProviders() as $provider) {
+      if (strstr(get_class($provider), 'ReflectionClass')) {
+        return $provider;
+      }
     }
+  }
 
-    
-      /**
-     * get InternetThiefProvider in Faker's providerlist. Only used internally
-     * @return StdClass $provider
-     */
-    private function getInternetProvider()
-    {
-           foreach ($this->faker->getProviders() as $provider) {
-            if (strstr(get_class($provider), 'ReflectionClass')) {
-                return $provider;
-            }
-    }
-    }
+  /**
+   * overwrite original functions
+   */
 
+  /**
+   * 
+   * @return String userName
+   */
+  public function userName() {
 
-    /**
-     * overwrite original functions
-     */
-    
-    /**
-     * 
-     * @return String userName
-     */
-    public function userName() {
+    $usernameformat = $this->getRandomStaticVariableFromInternetProvider('userNameFormats');
 
-        $usernameformat = $this->getRandomStaticVariableFromInternetProvider('userNameFormats');
+    $new_uname = $this->parse($usernameformat, true);
+    //führe protected "transliterate" aus
+    $new_uname_transliterated = $this->callProtectedFunctionFromInternetProvider('transliterate', array($new_uname));
 
-        $new_uname = $this->parse($usernameformat, true); 
-        //führe protected "transliterate" aus
-        $new_uname_transliterated = $this->callProtectedFunctionFromInternetProvider('transliterate', array($new_uname));
+    $this->userName = $new_uname_transliterated;
+    return $new_uname_transliterated;
+  }
 
-        $this->userName = $new_uname_transliterated; 
-        return $new_uname_transliterated;
-    }
+  /**
+   * 
+   * @return string $email
+   */
+  public function email() {
+    $mailformat = $this->getRandomStaticVariableFromInternetProvider('emailFormats');
+    $mail = $this->parse($mailformat);
+    $this->email = $mail;
+    return $mail;
+  }
 
+  /*   * ********************************************************
+   *   DIESE FUNKTIONEN SIND WRAPPER AUF FAKER
+   *   ermöglicht Zugriff auf Original-API via RealisticFaker\Factory::create()->phoneNumber
+   * ******************************************************** */
 
-    /**
-     * 
-     * @return string $email
-     */
-    public function email() {
-        $mailformat = $this->getRandomStaticVariableFromInternetProvider('emailFormats');
-        $mail = $this->parse($mailformat);
-        $this->email = $mail; 
-        return $mail; 
-    }
+  public function __call($name, $arguments) {
 
-    
-     /* *********************************************************
-     *   DIESE FUNKTIONEN SIND WRAPPER AUF FAKER
-     *   ermöglicht Zugriff auf Original-API via  DataCreator::get()->phoneNumber
-     * ******************************************************** */
+    return $this->faker->__call($name, $arguments);
+  }
 
-    public function __call($name, $arguments) {
-
-        return $this->faker->__call($name, $arguments);
-    }
-
-    /**
-     * @param string $attribute
-     *
-     * @return mixed
-     */
-    public function __get($attribute) {
-        return $this->$attribute();
-    }
+  /**
+   * @param string $attribute
+   *
+   * @return mixed
+   */
+  public function __get($attribute) {
+    return $this->$attribute();
+  }
 
 }
