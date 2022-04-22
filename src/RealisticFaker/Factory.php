@@ -38,7 +38,10 @@ class Factory extends \Faker\Factory {
       $generator->addProvider(new $providerClassName($generator));
     }
 
-    $generator->seed(crc32($identifier));
+    if($identifier)
+    {
+      $generator->seed(crc32($identifier));
+    }
     return $generator;
   }
 
