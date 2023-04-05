@@ -293,8 +293,11 @@ class Generator extends \Faker\Generator {
     if (strpos($result, '{{userName}}') !== FALSE) {
       $result = str_replace('{{userName}}', $this->userName, $format);
     }
-    $result = str_replace('{{firstName}}', $this->firstName, $result);
-    $result = str_replace('{{lastName}}', $this->lastName, $result);
+    else {
+      $result = str_replace('{{firstName}}', $this->convertUmlauts($this->firstName), $result);
+      $result = str_replace('{{lastName}}', $this->convertUmlauts($this->lastName), $result);
+    }
+
 
     //gebe sonstige Variablen an Faker weiter
     $result = $this->faker->parse($result);
@@ -304,6 +307,16 @@ class Generator extends \Faker\Generator {
     $result = self::simplifyString($result, $to_lower);
 
     return $result;
+  }
+
+  /**
+   * converts "umlauts" like "ä" to "ae"
+   * @param String $str
+   * @return String $str with umlauts converted
+   */
+  function convertUmlauts($str) {
+    $tempstr = Array("Ä" => "AE", "Ö" => "OE", "Ü" => "UE", "ä" => "ae", "ö" => "oe", "ü" => "ue", "ß" => "ss");
+    return strtr($str, $tempstr);
   }
 
   /**
