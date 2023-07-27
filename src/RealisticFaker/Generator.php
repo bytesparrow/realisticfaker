@@ -310,13 +310,16 @@ class Generator extends \Faker\Generator {
   }
 
   /**
-   * converts "umlauts" like "ä" to "ae"
+   * converts "umlauts" like "ä" to "ae" and removes accents like in André
    * @param String $str
-   * @return String $str with umlauts converted
+   * @return String $str without accents
    */
   function convertUmlauts($str) {
     $tempstr = Array("Ä" => "AE", "Ö" => "OE", "Ü" => "UE", "ä" => "ae", "ö" => "oe", "ü" => "ue", "ß" => "ss");
-    return strtr($str, $tempstr);
+    $strwithouth_german_umlaut =  strtr($str, $tempstr);
+    //remove other accents like in André
+    //taken from Cazuma Nii Cavalcanti on https://stackoverflow.com/questions/1017599/how-do-i-remove-accents-from-characters-in-a-php-string 
+    return strtr(utf8_decode($strwithouth_german_umlaut), utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'), 'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
   }
 
   /**
